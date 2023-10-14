@@ -6,49 +6,121 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: ItemSelectionScreen(),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
+        //useMaterial3: true,
+      ),
+      home: ItemListScreen(),
     );
   }
 }
 
-class ItemSelectionScreen extends StatefulWidget {
+class ItemListScreen extends StatefulWidget {
   @override
-  _ItemSelectionScreenState createState() => _ItemSelectionScreenState();
+  _ItemListScreenState createState() => _ItemListScreenState();
 }
 
-class _ItemSelectionScreenState extends State<ItemSelectionScreen> {
-  List<ItemModel> items = [
-    ItemModel("Item 1", false),
-    ItemModel("Item 2", false),
-    ItemModel("Item 3", false),
-    ItemModel("Item 4", false),
-    ItemModel("Item 5", false),
-  ];
+class _ItemListScreenState extends State<ItemListScreen> {
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+  List<ItemModel> items = [];
 
-  int selectedCount = 0;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        actions: const [
+          Icon(Icons.search,color: Colors.blue,)
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: <Widget>[
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                  focusedBorder: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(),
+                  labelText: 'Add Title'),
+            ),
+            const SizedBox(height: 8,),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                  focusedBorder: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(),
+                  labelText: 'Add Description'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _addItem();
+              },
+              child: Text('Add'),
+            ),
+            Expanded(
+              child: ListView.separated(
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    leading: CircleAvatar(
 
-  void toggleItemSelection(int index) {
-    setState(() {
-      items[index].isSelected = !items[index].isSelected;
-      if (items[index].isSelected) {
-        selectedCount++;
-      } else {
-        selectedCount--;
-      }
-    });
+                    ),
+                    title: Text('${items[index].title}'),
+                    subtitle: Text('${items[index].description}'),
+                    trailing: Icon(Icons.drive_file_move_outline),
+                    onLongPress: () {
+                      _showEditDeleteDialog(context, index);
+                    },
+                  );
+                }, separatorBuilder: (BuildContext context, int index) {
+
+                 return Divider(
+                   height: 10,
+
+                 );
+              },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  void showSelectionDialog() {
+  void _addItem() {
+    String title = titleController.text;
+    String description = descriptionController.text;
+
+    if (title.isNotEmpty && description.isNotEmpty) {
+      items.add(ItemModel(title, description));
+      titleController.clear();
+      descriptionController.clear();
+      setState(() {});
+    }
+  }
+
+  void _showEditDeleteDialog(BuildContext context, int index) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
         return AlertDialog(
-          title: Text("Selected Items"),
-          content: Text("Number of  selected item: $selectedCount "),
+          title: Text('Alert'),
           actions: <Widget>[
+
             TextButton(
-              child: Text("Close"),
+              child: Text('Edit'),
               onPressed: () {
+                Navigator.of(context).pop();
+                _editItem(context, index);
+              },
+            ),
+            TextButton(
+              child: Text('Delete'),
+              onPressed: () {
+                _deleteItem(index);
                 Navigator.of(context).pop();
               },
             ),
@@ -58,37 +130,59 @@ class _ItemSelectionScreenState extends State<ItemSelectionScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(" Selection Screen"),
-      ),
-      body: ListView.builder(
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(items[index].name),
-            onTap: () {
-              toggleItemSelection(index);
-            },
-            tileColor: items[index].isSelected ? Colors.blue : null,
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showSelectionDialog();
-        },
-        child: Icon(Icons.check),
-      ),
+  void _editItem(BuildContext context, int index) {
+    TextEditingController titleController = TextEditingController(text: items[index].title);
+    TextEditingController descriptionController = TextEditingController(text: items[index].description);
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            children: <Widget>[
+
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                    focusedBorder: OutlineInputBorder(),
+                    enabledBorder: OutlineInputBorder(),
+                    ),
+              ),
+              const SizedBox(height: 8,),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                    focusedBorder: OutlineInputBorder(),
+                    enabledBorder: OutlineInputBorder(),
+                    ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  items[index].title = titleController.text;
+                  items[index].description = descriptionController.text;
+                  Navigator.of(context).pop();
+                  setState(() {});
+                },
+                child: Text('Edit done'),
+              ),
+
+            ],
+          ),
+        );
+      },
     );
+  }
+
+  void _deleteItem(int index) {
+    items.removeAt(index);
+    setState(() {});
   }
 }
 
 class ItemModel {
-  final String name;
-  bool isSelected;
+  String title;
+  String description;
 
-  ItemModel(this.name, this.isSelected);
+  ItemModel(this.title, this.description);
 }
